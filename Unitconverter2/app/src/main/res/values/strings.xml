@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Unitconverter2</string>
+    <string name="meter">Meter</string>
+    <string name="centimeter">Centimeter</string>
+    <string name="feet">Feet</string>
+    <string name="millimeter">Millimeter</string>
+
+
+</resources>
