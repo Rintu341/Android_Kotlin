@@ -1,8 +1,10 @@
 package com.example.unitconverter2
 
 import android.os.Bundle
+import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 
 import androidx.compose.foundation.layout.Arrangement
@@ -16,10 +18,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,13 +38,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,22 +78,22 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun UnitConverter(modifier: Modifier = Modifier) {
 
-    var inputValue by remember{
+    var inputValue by rememberSaveable {
         mutableStateOf(" ")
     }
-    var outputValue by remember {
+    var outputValue by rememberSaveable {
         mutableStateOf("")
     }
-    var outputUnit by remember {
+    var outputUnit by rememberSaveable {
         mutableStateOf("Centimeter")
     }
-    var inputUnit by remember {
+    var inputUnit by rememberSaveable {
         mutableStateOf("Meter")
     }
-    val oExpand  = remember {
+    val oExpand = rememberSaveable {
         mutableStateOf(false)
     }
-    val iExpand  = remember {
+    val iExpand = rememberSaveable {
         mutableStateOf(false)
     }
     Column (
@@ -95,7 +104,9 @@ fun UnitConverter(modifier: Modifier = Modifier) {
         Text(
             text = "Unit Converters",
             fontSize = 32.sp,
-            fontStyle = FontStyle.Italic
+            fontStyle = FontStyle.Italic,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Bold
         )
     }
     Column (
@@ -107,7 +118,7 @@ fun UnitConverter(modifier: Modifier = Modifier) {
     ){
         OutlinedTextField(
             value = inputValue,
-            onValueChange ={it -> inputValue = it} ,
+            onValueChange ={inputValue = it} ,
             label = {Text("Enter value")},
             singleLine = true
         )
@@ -117,7 +128,10 @@ fun UnitConverter(modifier: Modifier = Modifier) {
             //input Button
             Box {
                 Button(
-                    onClick = { iExpand.value = true }
+                    onClick = { iExpand.value = true },
+                    colors =  ButtonDefaults.buttonColors(
+                        colorResource(id =R.color.DropDownButton)
+                    )
                 ) {
                     Text(text = inputUnit)
                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Arrow Drop")
@@ -167,7 +181,10 @@ fun UnitConverter(modifier: Modifier = Modifier) {
             //output Button
             Box {
                 Button(
-                    onClick = { oExpand.value = true }
+                    onClick = { oExpand.value = true },
+                    colors =  ButtonDefaults.buttonColors(
+                        colorResource(id =R.color.DropDownButton)
+                    )
                 ) {
                     Text(text = outputUnit)
                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Arrow Down")
@@ -205,18 +222,29 @@ fun UnitConverter(modifier: Modifier = Modifier) {
             }
         }
         Spacer(modifier.height(16.dp))
-        Button(
-            onClick = {
-                   outputValue =  Convertion(inputValue,outputUnit,inputUnit)
-            }
-
+        Row(
+            modifier.padding(start = 32.dp,end= 32.dp)
         ) {
-            Text(text = "Calculate",
-                modifier.fillMaxWidth()
-                    .height(36.dp),
-                fontSize = 32.sp,
-                textAlign = TextAlign.Center
+            Button(
+                onClick = {
+                    outputValue = Convertion(inputValue, outputUnit, inputUnit)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    Color.Gray,
+                    contentColor = Color.Cyan
+                ),
+                shape = RoundedCornerShape(topStart = 10.dp,bottomEnd = 10.dp),
+                border = BorderStroke(1.dp, color = Color.Black)
+            ) {
+                Text(
+                    text = "Calculate",
+                    modifier
+                        .fillMaxWidth()
+                        .height(36.dp),
+                    fontSize = 32.sp,
+                    textAlign = TextAlign.Center
                 )
+            }
         }
         Spacer(modifier.height(16.dp))
         Text(text= "Result : $outputValue $outputUnit",fontSize = 24.sp )
