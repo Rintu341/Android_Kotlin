@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,15 +45,16 @@ fun ShoppingListApp() {
     var isOpenDialog by remember {
         mutableStateOf(false)
     }
+    val obj by remember {
+        mutableStateOf(ShoppingListItemData())
+    }
     var itemName by remember {
         mutableStateOf("")
     }
     var itemQnt by remember {
         mutableStateOf("")
     }
-    val obj by remember {
-        mutableStateOf(ShoppingListItemData())
-    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -81,7 +83,7 @@ fun ShoppingListApp() {
                 shape = RoundedCornerShape(30.dp),
 
                 ) {
-                IconButton(onClick = { isOpenDialog = !isOpenDialog }) {
+                IconButton(onClick = {isOpenDialog = isOpenDialog}) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = "Add Item",
@@ -90,9 +92,9 @@ fun ShoppingListApp() {
                 }
             }
         }
-        if (isOpenDialog) {/*
-            isOpenDialog = AlertDialogUI(itemName,itemQnt,{newitem-> itemName = newitem},{newqnt->itemQnt = newqnt},isOpenDialog)
-             */
+        if (isOpenDialog) {
+             AlertDialogUI(itemName,itemQnt,isOpenDialog,-1)
+            /*
             AlertDialog(
                 modifier = Modifier.padding(all = 8.dp),
                 onDismissRequest = { isOpenDialog = false },
@@ -144,58 +146,89 @@ fun ShoppingListApp() {
                     }
                 },
             )
+            */
         }
+
     }
 }
 
-/*
+
 //use Alert Dialog to add Shopping data
 @Composable
-fun AlertDialogUI(itemName:String,itemQnt:String,onItemChange: (String) -> Unit, onQntChange:(String)->Unit,openDialog: Boolean)
-{
-    var openDialog = isOpenDialog
-    AlertDialog(
-        modifier = Modifier.padding(all = 8.dp),
-        onDismissRequest = { openDialog = false },
-        title = {Text(text = "Add Shopping List Item" )},
-        confirmButton = {
-            Column (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ){
+fun AlertDialogUI(
+    itemN: String,
+    itemQ: String,
+    var isOpenDialog: Boolean,
+    id:Int
+) {
+    var openDialog by remember { mutableStateOf(isOpenDialog) } // Use a var with remember
+    val obj by remember {
+        mutableStateOf(ShoppingListItemData())
+    }
+    var itemName by remember {
+        mutableStateOf(itemN)
+    }
+    var itemQnt by remember {
+        mutableStateOf(itemQ)
+    }
+    if (openDialog) { // Conditionally render the dialog based on the state
+        AlertDialog(
+            modifier = Modifier.padding(all = 8.dp),
+            onDismissRequest = { openDialog = false },
+            title = { Text(text = "Add Shopping List Item") },
+            confirmButton = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     OutlinedTextField(
-                        value = itemName, onValueChange =onItemChange
-                        , placeholder = {Text("item name")},
+                        value = itemName, onValueChange = {newitem -> itemName = newitem},
+                        placeholder = { Text("item name") },
                         shape = RoundedCornerShape(20),
                         singleLine = true,
                     )
                     OutlinedTextField(
-                        value = itemQnt, onValueChange = onQntChange
-                        , placeholder = {Text("item Quantity")},
+                        value = itemQnt, onValueChange = {newqnt -> itemQnt = newqnt},
+                        placeholder = { Text("item Quantity") },
                         shape = RoundedCornerShape(20),
                         singleLine = true,
                     )
-                Row (
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ){
-                    Button(
-                        onClick = { /*TODO*/ },
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        Button(
+                            onClick = {
+                                if (!itemName.isEmpty()){
+                                    if(id == -1)
+                                    {
+                                        val objItem = ShoppingListItem(
+                                            id = obj.shoppingData.size + 1,
+                                            itemName = itemName,
+                                            quantity = itemQnt.toInt()
+                                        )
+                                        obj.shoppingData += objItem
+                                    }else
+                                    {
+                                        obj.modifyItemData(id,itemName,itemQnt)
+                                    }
+                                }
+                            }
+                        ) {
                             Text("Add")
-                    }
-                    Button(
-                        onClick = { openDialog = false },
-                    ) {
-                        Text("Cancel")
+                        }
+                        Button(
+                            onClick = { openDialog = false },
+                        ) {
+                            Text("Cancel")
+                        }
                     }
                 }
             }
-        },
-    )
-    return openDialog
+        )
+    }
+    // Note: No return statement here as @Composable functions do not return values directly.
 }
- */
 @Composable
 fun LazyColumnUI(obj : ShoppingListItemData) {
     LazyColumn(
@@ -216,6 +249,12 @@ fun LazyColumnUI(obj : ShoppingListItemData) {
 
 @Composable
 fun ItemUI(mylist : ShoppingListItem) {
+    var isEdit by remember {
+        mutableStateOf(false)
+    }
+    var isDelete by remember {
+        mutableStateOf(false)
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -234,17 +273,27 @@ fun ItemUI(mylist : ShoppingListItem) {
             Text(text = "qnt: "+mylist.quantity)
             Row {
                 IconButton(onClick = {
-                    /*TODO*/
+                    isEdit = !isEdit
                 }) {
                     Icon(Icons.Filled.Create, contentDescription = "update")
                 }
                 IconButton(onClick = {
-                    /*TODO*/
+                    isDelete = !isDelete
                 }) {
                     Icon(Icons.Filled.Delete, contentDescription = "Delete")
                 }
+
             }
         }
+    }
+    if(isEdit)
+    {
+        AlertDialogUI(mylist.itemName,mylist.quantity.toString(),true,mylist.id)
+    }
+    if(isDelete)
+    {
+        val obj = ShoppingListItemData()
+        obj.deleteItemData(mylist.id)
     }
 }
 
@@ -253,20 +302,3 @@ fun ItemUI(mylist : ShoppingListItem) {
 fun ShoppingListAppPreview() {
     ShoppingListApp()
 }
-/*
-@Preview(showBackground = true)
-@Composable
-fun AlertDialogPreview()
-{
-    var itemName by remember {
-        mutableStateOf("")
-    }
-    var itemQnt by remember {
-        mutableStateOf("")
-    }
-    var isOpenDialog by remember {
-        mutableStateOf(false)
-    }
-    AlertDialogUI(itemName,itemQnt,{newitem-> itemName = newitem},{newqnt->itemQnt = newqnt},isOpenDialog)
-}
- */
