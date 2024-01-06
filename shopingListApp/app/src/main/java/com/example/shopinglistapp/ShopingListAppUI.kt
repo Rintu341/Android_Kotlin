@@ -1,16 +1,18 @@
 package com.example.shopinglistapp
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,7 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.shopinglistapp.Data.ShoppingListItemData
 import com.example.shopinglistapp.model.ShoppingListItem
 
 @Composable
@@ -45,8 +47,8 @@ fun ShoppingListApp() {
     var isOpenDialog by remember {
         mutableStateOf(false)
     }
-    val obj by remember {
-        mutableStateOf(ShoppingListItemData())
+    var shoppingData by remember {
+        mutableStateOf(listOf<ShoppingListItem>())
     }
     var itemName by remember {
         mutableStateOf("")
@@ -58,7 +60,7 @@ fun ShoppingListApp() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(all = 16.dp)
+            .padding(all = 12.dp)
     ) {
 
         Text(
@@ -70,10 +72,41 @@ fun ShoppingListApp() {
             fontFamily = FontFamily.Default,
             color = MaterialTheme.colorScheme.primary
         )
-        LazyColumnUI(obj = obj)
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(shoppingData)
+            {item ->
+                if(item.isEdit)
+                {
+                    ShoppingItemEditor(item = item, onEditComplete ={
+                            itemName, itemQuantity ->
+                        shoppingData = shoppingData.map { it.copy(isEdit = false) }
+                        val itemItem = shoppingData.find { it.id == item.id }
+                        itemItem?.let{
+                            it.itemName = itemName
+                            it.quantity = itemQuantity
+                        }
+                    } )
+                    Log.d("Update","update")
+                }else {
+                    ItemUI(item,
+                        onEditClick = {
+                            shoppingData = shoppingData.map{it.copy(isEdit = it.id ==item.id)}
+                        },
+                        onDeleteClick = {
+                            shoppingData = shoppingData - item
+                        }
+                    )
+                    Log.d("Show","show")
+                }
+            }
+        }
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize(1f)
                 .padding(8.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.End,
@@ -83,7 +116,7 @@ fun ShoppingListApp() {
                 shape = RoundedCornerShape(30.dp),
 
                 ) {
-                IconButton(onClick = {isOpenDialog = isOpenDialog}) {
+                IconButton(onClick = {isOpenDialog = !isOpenDialog}) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = "Add Item",
@@ -93,8 +126,6 @@ fun ShoppingListApp() {
             }
         }
         if (isOpenDialog) {
-             AlertDialogUI(itemName,itemQnt,isOpenDialog,-1)
-            /*
             AlertDialog(
                 modifier = Modifier.padding(all = 8.dp),
                 onDismissRequest = { isOpenDialog = false },
@@ -105,13 +136,13 @@ fun ShoppingListApp() {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedTextField(
-                            value = itemName, onValueChange = { newitem -> itemName = newitem },
+                            value = itemName, onValueChange = { itemName = it },
                             placeholder = { Text("item name") },
                             shape = RoundedCornerShape(20),
                             singleLine = true,
                         )
                         OutlinedTextField(
-                            value = itemQnt, onValueChange = { newqnt -> itemQnt = newqnt },
+                            value = itemQnt, onValueChange = {itemQnt = it },
                             placeholder = { Text("item Quantity") },
                             shape = RoundedCornerShape(20),
                             singleLine = true,
@@ -122,13 +153,13 @@ fun ShoppingListApp() {
                         ) {
                             Button(
                                 onClick = { // Add new item to list
-                                    if (!itemName.isEmpty()) {
+                                    if (itemName.isNotEmpty()) {
                                         val objItem = ShoppingListItem(
-                                            id = obj.shoppingData.size + 1,
+                                            id = shoppingData.size + 1,
                                             itemName = itemName,
-                                            quantity = itemQnt.toInt()
+                                            quantity = itemQnt.toIntOrNull()?:1
                                         )
-                                        obj.shoppingData += objItem
+                                        shoppingData += objItem
                                         isOpenDialog = !isOpenDialog
                                         itemName = ""; itemQnt = ""
                                     }
@@ -144,117 +175,66 @@ fun ShoppingListApp() {
                             }
                         }
                     }
-                },
+                }
             )
-            */
         }
-
-    }
-}
-
-
-//use Alert Dialog to add Shopping data
-@Composable
-fun AlertDialogUI(
-    itemN: String,
-    itemQ: String,
-    var isOpenDialog: Boolean,
-    id:Int
-) {
-    var openDialog by remember { mutableStateOf(isOpenDialog) } // Use a var with remember
-    val obj by remember {
-        mutableStateOf(ShoppingListItemData())
-    }
-    var itemName by remember {
-        mutableStateOf(itemN)
-    }
-    var itemQnt by remember {
-        mutableStateOf(itemQ)
-    }
-    if (openDialog) { // Conditionally render the dialog based on the state
-        AlertDialog(
-            modifier = Modifier.padding(all = 8.dp),
-            onDismissRequest = { openDialog = false },
-            title = { Text(text = "Add Shopping List Item") },
-            confirmButton = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = itemName, onValueChange = {newitem -> itemName = newitem},
-                        placeholder = { Text("item name") },
-                        shape = RoundedCornerShape(20),
-                        singleLine = true,
-                    )
-                    OutlinedTextField(
-                        value = itemQnt, onValueChange = {newqnt -> itemQnt = newqnt},
-                        placeholder = { Text("item Quantity") },
-                        shape = RoundedCornerShape(20),
-                        singleLine = true,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Button(
-                            onClick = {
-                                if (!itemName.isEmpty()){
-                                    if(id == -1)
-                                    {
-                                        val objItem = ShoppingListItem(
-                                            id = obj.shoppingData.size + 1,
-                                            itemName = itemName,
-                                            quantity = itemQnt.toInt()
-                                        )
-                                        obj.shoppingData += objItem
-                                    }else
-                                    {
-                                        obj.modifyItemData(id,itemName,itemQnt)
-                                    }
-                                }
-                            }
-                        ) {
-                            Text("Add")
-                        }
-                        Button(
-                            onClick = { openDialog = false },
-                        ) {
-                            Text("Cancel")
-                        }
-                    }
-                }
-            }
-        )
-    }
-    // Note: No return statement here as @Composable functions do not return values directly.
-}
-@Composable
-fun LazyColumnUI(obj : ShoppingListItemData) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-            item()
-            {
-                for (x in obj.shoppingData)
-                {
-                    ItemUI(mylist = x)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
     }
 }
 
 @Composable
-fun ItemUI(mylist : ShoppingListItem) {
-    var isEdit by remember {
-        mutableStateOf(false)
+fun ShoppingItemEditor(item:ShoppingListItem,onEditComplete:(String,Int)->Unit)
+{
+    var itemName by remember{
+        mutableStateOf(item.itemName)
     }
-    var isDelete by remember {
-        mutableStateOf(false)
+    var itemQuantity by remember {
+        mutableStateOf(item.quantity.toString())
     }
+    var isEditing by remember {
+        mutableStateOf(item.isEdit)
+    }
+    Row (
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ){
+        Column (
+            modifier = Modifier.weight(3f)
+        ){
+            TextField(value = itemName,
+                onValueChange ={itemName = it} ,
+                singleLine =  true,
+
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp),
+            )
+            TextField(value = itemQuantity,
+                onValueChange ={itemQuantity = it} ,
+                singleLine =  true,
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp),
+            )
+        }
+        Button(onClick = {
+            isEditing = false
+            onEditComplete(itemName,itemQuantity.toIntOrNull()?:1)
+        },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(Color.Blue)
+        ) {
+            Text(
+                "Save",
+            )
+        }
+    }
+}
+
+@Composable
+fun ItemUI(myList : ShoppingListItem,onEditClick:()->Unit,onDeleteClick:()->Unit) {
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -269,36 +249,68 @@ fun ItemUI(mylist : ShoppingListItem) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "item: "+mylist.itemName)
-            Text(text = "qnt: "+mylist.quantity)
+            Text(text = "item: "+myList.itemName)
+            Text(text = "qnt: "+myList.quantity)
             Row {
                 IconButton(onClick = {
-                    isEdit = !isEdit
+                    onEditClick()
+                    Log.d("Edit","edit")
                 }) {
                     Icon(Icons.Filled.Create, contentDescription = "update")
                 }
                 IconButton(onClick = {
-                    isDelete = !isDelete
+                    onDeleteClick()
+                    Log.d("Delete","delete")
                 }) {
                     Icon(Icons.Filled.Delete, contentDescription = "Delete")
-                }
 
+                }
             }
         }
-    }
-    if(isEdit)
-    {
-        AlertDialogUI(mylist.itemName,mylist.quantity.toString(),true,mylist.id)
-    }
-    if(isDelete)
-    {
-        val obj = ShoppingListItemData()
-        obj.deleteItemData(mylist.id)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ShoppingListAppPreview() {
-    ShoppingListApp()
+    var name by remember{
+        mutableStateOf("")
+    }
+
+    Row (
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement =  Arrangement.SpaceEvenly
+    ){
+        Column (
+            modifier = Modifier.weight(3f)
+        ){
+            TextField(value = name,
+                onValueChange ={name = it} ,
+                singleLine =  true,
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp),
+            )
+            TextField(value = name,
+                onValueChange ={name = it} ,
+                singleLine =  true,
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp),
+            )
+        }
+        Button(onClick = {
+//            isEditing = false
+//            onEditComplete(itemName,itemQuantity.toIntOrNull()?:1)
+        },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(Color.Blue),
+        ) {
+            Text(
+                "Save",
+            )
+        }
+    }
 }
